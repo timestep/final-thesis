@@ -1,0 +1,752 @@
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage{setspace}
+\doublespacing
+\usepackage{mathptmx}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{url}
+\usepackage{fancyvrb}
+\usepackage{nomencl} 
+
+\DefineVerbatimEnvironment{code}{Verbatim}{fontsize=\small}
+\DefineVerbatimEnvironment{example}{Verbatim}{fontsize=\small}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{Simulation of Light Yield for a Next Generation Liquid Argon Dark Matter Detector}
+\author{Aaron Kevin Sivabalan}
+\makenomenclature
+
+\begin{document}
+
+\begin{minipage}[h]{\textwidth}
+    \maketitle
+\thispagestyle{empty}
+\begin{center}
+Engineering Physics Thesis\\
+\emph {PHYS 453} \\
+Advisors: Professor Tony Noble and Professor Mark Boulay\\
+Department of Physics
+\end{center}
+\begin{abstract}
+
+Liquid Argon(LAr) Dark Matter Detectors are one of the many methods being used today to identify the Weakly Interacting Massive Particle, a particle which characterizes the effects known as Dark Matter. This paper describes the design of a 40Tonne and 500Tonne spherical LAr Detector which is done through Geant4, a particle physics Monte Carlo simulator. The paper will describe the charaterization process of these detectors in terms of their ability to detect light at specified energy levels. A 500Tonne detector and 40T detector are capable of detecting 8 photons/keV. The 500Tonne detector is capable of detecting more events per keV due to its sheer size. A majority of this thesis and the design of the detectors is centered around the use of Quartz Intensifying Photonic Detectors(QUPIDS) and an arrangement algorithm to maximize coverage around the acrylic spherical design.  
+
+\end{abstract}
+\end{minipage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pagenumbering{roman}
+\newpage
+\chapter*{Acknowledgments}
+
+I would like to thank my advisors, Professor Noble and Professor Boulay for giving me the privilege of laying groundwork for a future Dark Matter detector, abliet a crude estimate. 
+
+I would also like to thank Marcin Kuzniak for his limitless patience with troubleshooting for Geant4 and coding my detector. His coding prowess is godlike.
+
+I would also like to make special thanks to Professor Noble for advice and guidance throughout the year on the outline, layout and direction of the thesis. Without his vision, I would not be half the places I would be part of the time.
+
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pagenumbering{arabic}
+\setcounter{page}{1} 
+\chapter{Introduction}
+
+The hunt for the explanation of Dark Matter is on the forefront of postmodern Particle Physics. The most common description for Dark Matter is a Weakly Interacting Massive Particle(WIMP), that can be detected via only interactions with the weak nuclear force. Scientists around the world are building various experiments with large quantities of detector mediums to search for possible nuclear recoil events. An example of this type of detector is DEAP 3600, a detector at SNOLAB. While it's experimental phase is just beginning, it is imperative to look to the future to plan and estimate the cost and performance of a future larger "Next Generation" detector for much more accurate measurements. The goal of this thesis is to develop software code that will enable us to simulate various detector topologies to study their performances.\\
+
+Discrepancies in measurement of celestial bodies have been the first indication of the existence of Dark Matter since the proposal in 1932 by Dutch astronomer Jan Oort via observations of the Doppler shifts of stars moving along the edge of the Milky Way\cite 1\cite 2. There was a discrepancy that stars in spiral galaxies had a uniform tangential velocity, suggesting either Newtonian gravity did not apply in this range or that the mass was not accounted for. He noted a “missing mass” that was required to fit the rotational velocity curves he had observed in comparison to the model that he predicted would occur. 
+
+In 1933, Franz Zwicky analyzed the Coma cluster of galaxies by observing objects on the edges of the galaxy cluster and comparing these to modeled rotational curves. He coined the term a "\emph{ dunkle Materie }" or "dark matter" that was required to account for the discrepancy\cite 3 between theory and what was observed. Despite this it wasn't until Vera Rubin in 1975, where the thorough analysis of the "galaxy rotation problem" brought this discrepancy into serious light\cite 4. A more recent analysis of this method is described in "H I rotation curves of spiral galaxies. I - NGC 3198"\cite 5.
+
+There are other observational experiments that give strong support for the existence of dark matter. Observations of elliptical galaxies show support via gravitational lensing. The most famous and direct observation involved the Bullet cluster. This cluster is actually the result of a collision of two galaxy clusters. X-ray observations of this cluster show that the baryonic mass is concentrated within the center of the system, probably due to Electromagnetic interactions between particles slowing them down. But evidence from gravitational lensing indicates that the majority of the mass is outside this region\cite 6. This is the indication of Dark matter, and also signifying its lack of interaction with the EM force.
+
+The Wilkinson Microwave Anisotropy Probe (WMAP) was able to identify the percent content of dark matter existing in the universe by measuring differences in the temperature of The Big Bang’s remnant heat, also known as the Cosmic Microwave Background Radiation\cite 7. The measurements from these experiments would help establish parameters for the Lambda-CDM(Cold Dark Matter) model, the currently accepted standard model of Cosmology. After 7 years of operation, the Probe was able to deduce that approximately, 22.8$\%$ of the universe is comprised of Cold Dark Matter\cite 8.
+
+Cold Dark Matter is one of the most promising versions of Dark Matter.  Other versions, warm, hot and mixed, have been disfavored due to discovery of dark energy in the 90s, the microwave background radiation measurements and the requirement that significant amounts of cold dark matter exist. These reasons and strong support behind the Lambda-CDM model dictate concentration and efforts to detect Cold Dark Matter.
+
+There are three categories that exist for the candidate that would create CDM, Axions, MACHOS and WIMPs. Axions\cite 9 are light particles that self-interact and would make a good candidate for a particle. MACHOS also known as Massive Compact Halo Objects are large objects such as black holes, neutron stars, white dwarfs, etc. which are dark matter by the virtue of being non-luminous. The most promising candidate though is the Weakly Interacting Massive Particle \cite{10} \cite{11}.
+
+The WIMP is proposed to only interact via the weak nuclear force, and gravity. The properties that are expected from the WIMP are similar to a neutrino, except heavier and slower\cite{12}. Due to these constraints, they tend to clump together, rather than be uniformly dispersed. These properties make them notoriously difficult to detect, yet several ingenious methods exist to detect these elusive particles.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\chapter{Theory}
+
+There are various methods to detect WIMPs, ranging from the observation of collisions of particles to detectors that look for   annihilation signals. This thesis will concentrate on the direct detection method. The method presented involves variation on the direct detection method, by using a spherical tank of Liquid Argon-40 which acts as a medium to detect the WIMP.  Here the WIMP interaction is observed via an elastic scattering off the Liquid Argon nucleus where by the LAr nucleus will create photons in the recoil event. This process is described in section 2.1. To characterize the detectors we must understand  their sensitivity to energy and the interaction rate of WIMPs. 
+
+\section{Recoil Energy in WIMP Nucleon Scattering}
+
+\begin{equation}
+E_r = 2E_x\frac{M_NM_x}{(M_N +M_x)^2} (1 - cos(\theta))
+\end{equation}
+
+Equation 2.1 describes the energy from a recoil event where $E_{r}$ is the recoil energy, $M_x$ and $E_x$ are the mass and energy of the WIMP particle, $M_N$ is the mass of the target nucleus and $\theta$ is the angle of scattering. The energy of the WIMP particle is easy to derive as it is known from observations of galactic halos, what velocities are required for rotations curves to fit precise calculations. The average velocity of a WIMP particle has been calculated to be\cite{18} at approximately 240km/s in the galactic neighbourhood of the Earth. One much also account for the relative velocity of the earth to the solar system. If we use the Boltzman Distribution equation for the probability distribution for the speed of the WIMP, we get,
+
+\begin{equation}
+\frac{dR}{dE_r} \propto e^{-\frac{E_r}{<E_r>}}
+\end{equation}
+
+Where $<E_r>$ is the averagy recoil energy.
+
+\begin{equation}
+< E_r > = 2\frac{M_N}{GeV}\frac{M_x}{(M_x +M_N)^2}(keV)
+\end{equation}
+
+From this equation, if we vary $M_x$, within reasonable limits for Dark Matter, we come to a range for $E_r$ between 10keV and 100keV, the senstivity .
+
+\section{Interation Rate}
+Another factor is how big the detector should be. Using Equation 2.4 below, we can find the expected interaction rate.
+
+\begin{equation}
+R = \frac{540}{A}\left(\frac{GeV}{M}\right)\left(\frac{\rho_0}{0.4\frac{GeV}{cm^3}}\right)\left(\frac{< v_x >}{230 \frac{km}{s}}\right)\left(\frac{\sigma_0}{pb}\right)\frac{counts}{kg*day}
+\end{equation}
+
+,where A is the atomic mass of the medium, M is the mass of the WIMP in GeV, where $\rho_x$ is the density of Dark Matter, $<v_x>$ is the average velocity of the WIMP, and $\sigma_0$ is the "zero momentum transfer" cross section of the WIMP in picobarns. R is the rate of interaction in counts/kg/day.
+
+From the interaction rate, at an approximate mass of 50GeV, 7 counts/ton/year are expected if the interaction rate is at the present level of sensitivity of about $10^{-46}$ for the WIMP nucleon cross section, then it is seen that the mass of the medium is directly proportional to the number of counts that are possible to view. This provides justification for a detector in the multi-tonne range to attain a statistically significant count rate.
+
+\section{Liquid Argon}
+
+The scintillation properties of Liquid Argon are well documented\cite{13}\cite{14}\cite{15} and appropriate for the purposes of the detector.
+\[
+\chi	+Ar-> Ar* +\chi	
+\]
+\[
+Ar*\\
+\]\[
+Ar*+Ar -> Ar*_2 \\
+\]
+\begin{equation}
+Ar*_2 -> 2Ar +h\nu
+\end{equation}
+
+Equation 2.4 describes one of the processes in which an Argon(Ar) nucleus is excited via a nuclear collision by a WIMP ($\chi	$) which emits $\nu$ a photon of 128nm. This excited state should not happen except when excited in an interaction or an ionization reaction, where the WIMP can also cause.
+
+Using data collected from previous experiments, we can conclude it is an appropriate medium, due to its inertness, high photon yield\footnote{40000 photons/event} and relative abundance\cite{16}\footnote{Approximately 1$\%$ of the atmosphere}. One thing to consider is the beta decay of the Ar-39 isotope, which will create background noise and false signals as they lie within the sensitivity of the detector. It has a 269 year half-life, one way to reduce the Ar-39 is by locating underground sources and wells, were the Argon has been isolated and allowed to decay to Potassium\cite{17}. Sources like this are difficult to locate, and are rare, but progress is being made. In addition, there are analytical methods to discriminate the beta decays from recoil events. These methods are beyond the scope of this paper.\footnote{Pulse Shape Discrimination is currently being used to differentiate nuclear events from beta decay}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\chapter{Problem Definition}
+
+The scope of this report will cover the fundamentals of the detector, specifically the basic dimensions and size of the core of the detector, the argon sphere and acrylic shell. It will also investigate the positioning and number of QUPIDs required and it's effective efficiency at detecting photons at various sensitives.
+
+While the detector can be designed to the most advanced stage, this report will concentrate on estimating the fundamental structure of the core of the detector, specifically the argon sphere and acrylic containment. Cooling methods and access methods of the liquid argon, electronics, construction methods and various other items are important, but are beyond the scope of this report. The scope of this design is mainly a preliminary estimate and performance analysis of what to expect from a 40T to 500T detector.
+
+\section{Size}
+Current Dark Matter Detectors have limits to within 10\textsuperscript{-46}cm\textsuperscript{2}. Detection within those limits are still subject to speculation and error. A larger detector will validate and create more accurate measurements if a particle is detected in a smaller detector. To achieve sensitivities at a lower cross section, in proportion to the sensitivities for a gain in a factor of 10 in cross section, the detector size must also increase by approximatly a factor of 10 as according to Equation 2.4
+
+In the event that a particle is not detected, a larger detector can provide the ability to probe lower cross-sections, and thus provide input to theoretcial models for Dark Matter.
+
+\section{Shape}
+A shape optimal to detecting the photons must be chosen. A WIMP collision is a rare event, and the detector must maximize its surface area of detection such that the QUPID can efficiently detect a maximum number of photons. 
+
+\section{Sensitivities}
+Typical energy sensitivities of detectors of these types are from few keV to 100keV, but due to noise discrimination this lower limit is difficult to gauge. A lower limit of 20keV is reasonable and outside noise of the electronics. These limits are derived from Equation 2.2 and these are known values used for similar detectors. 
+
+\section{Materials}
+The materials comprising the detector should be of very low radioactivity so as to not interfere with the interactions, and create false signals. This includes the detectors, the containment vessel, and the medium of interaction.
+
+The detector also must be shielded from external sources of radiation.
+
+\section{Cost}
+The detector must be within a budget of $\$$100 Million, a conservative estimate of the amount that can be allocated from external funds.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\chapter{Design Proposal}
+
+A spherical ultraviolet transmitting acrylic vessel, filled with Liquid Argon is the design proposal. The acrylic vessel will be lined with Tetraphenyl butadiene(TPB) as a wavelength shifter, to shift the 128nm photons produced by scintillation light in Argon from the recoil events to 400nm for the QUPIDs surrounding the vessel on the outside to detect. This process is shown in Figure 4.1. The entire detector should be constructed in an underground laboratory, preferably SNOLAB upon completion of the DEAP-3600 experiment. The lab is ideal is to prevent external and cosmic radiation from affecting the events due to the fact that the lab is in a mine underground. The detector is modeled in Geant4, and this process is described in Chapter 5.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{diagram.jpg}
+\caption{This diagram describes the process of scintillation and conversion of the photon in a WIMP interaction}
+\end{figure}
+
+\section{Materials}
+\subsection{Liquid Argon (LAr)}
+The argon will act as the medium with which the WIMPs will interact. The interaction process is described in Section 2.1.
+
+The argon is in a pure liquid state at approximately 87K. Liquid Argon is readily available in the atmosphere, has a high density at liquid state as shown in Table 1, is inert, and has a high photon yield of approximately $4.0*10^4$ photons\cite{20} from a signal interaction at 1MeV. 
+
+The availability of Liquid Argon is convenient as it comprises 1$\%$ of our atmosphere. However, it has one drawback due to the existence of Ar-39, which beta decay’s and contributes to background noise. Hence other sources of LAr should be considered. Underground sources, thermal diffusion columns, and laser isotope separation are possible methods to remove Ar-39\cite{20} to ensure the purity of the medium.
+
+The high density of the liquid state ensures a higher interaction rate with in the liquid, and ensures a greater sample of events to study. 
+
+\subsection{Acrylic Shell}
+ Poly(methyl methacrylate), also known as Acrylic, is a transparent plastic used as a substitute for glass. It does not contribute to the background radiation significantly and contains a high tensile stress. The acrylic chosen is a special UVT-Acrylic with the ability to transmit 128nm photons. The simulation used a 10cm thickness for the acrylic shell, a very conservative estimate for the thickness for both 40T and 500T. A calculation was preformed to determine the minimum thickness of Acrylic allowed with a safety factor of five. For a 40T detector this is $\approx$10cm. The thinner the detector the more photons can pass through and be gathered by the QUPIDs. 
+
+\subsection{Wavelength Shifter Surface (WLSS)}
+The wavelength shifter surface shifts the 128nm photons from the LAr recoil events to 400nm for the QUPIDS to effectively detect. Tetraphenyl butadiene(TPB) is a material which can serve this purpose, and must be coasted on the inner surface of the acrylic shell via vacuum deposition.
+
+\subsection{Quartz Photon Intensifying Detectors (QUPIDS)}
+QUPIDs are ultra-low background photodetectors being build by Hamamatsu Photonics and the Universtiy of California, Los Angles, for the purposes of Dark Matter and Double Beta Decay experiment\cite{20}. These detectors are experimental devices that have not yet been commercialized.They have the ability to operate in cryogenic temperatures, there by eliminating the need for light guides. They contain a low intrinsic radioactivity, great for a lowered background noise. They are most efficient  at 400nm\cite{19} with 40$\%$ efficiency. 
+
+The QUPIDs surround the detector 10cm above the surface of the acrylic. They are arranged so as to maximize coverage on the sphere. Each QUPID is arranged side to side, and modeled as a sphere in place of the actual geometry. 
+
+\subsubsection{QUPID Positioning}
+Using a spherical coordinate system, the QUPIDs were positioned into a staggered arrangement. The algorithm acknowledges the varying circumference of the sphere as the QUPID rows shift down. It determines the circumference of the current row to arrange the QUPIDs via the knowledge of the preexisting QUPID row, the radius of the QUPID, and the distance from the center of the detector to the position of the current row. 
+
+This circumference is divided by two times the radius of the QUPID, and determines the number of QUPIDs for that circumference. The QUPIDs are then positioned.
+
+Every odd row, the arrangement is shifted half the radius to create the staggered arrangement. Credit goes to the MiniBooNe experiment at Fermilab for this idea. 
+
+At the end of the code, the individual QUPID ID$\#$, positioning in Cartesian coordinates and total QUPID number is placed into a file.
+
+The code is attached in Appendix A.
+\newpage
+\section{Dimensions}
+Two Detectors were simulated for cost and performance comparison.
+
+\subsection{500 T Detector}
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{500Ttopdown.png}
+\caption{A top down view of the 500T Detector}
+\end{figure}
+
+Figure 4.2 shows the detector's appearance. The red dots are individual QUPIDs, and the light blue shell is the acrylic shell. 
+
+\begin{table}[h]
+\caption{Characteristics of 500T Detector}
+\begin{center}
+    \begin{tabular}{ | l | l |}
+    \hline
+	\multicolumn{2}{|c|}{Dimensions of Argon Sphere} \\
+ 	\hline
+	Radius & 4.5m \\ \hline
+	Volume & 381.70$m^3$  \\ \hline
+	Mass & 545836.0kg \\ \hline
+	\multicolumn{2}{|c|}{Acrylic Shell} \\ \hline
+	Thickness of Shell & 0.1m \\ \hline
+	Mass & 4498 kg \\ \hline
+	\multicolumn{2}{|c|}{QUPIDs} \\ \hline
+	Number of QUPIDs & 54401 \\ \hline
+	Coverage of QUPIDs & 84.64$\%$ \\ \hline \hline
+	Total Mass & 550333 kg \\ \hline    
+	\hline
+    \end{tabular}
+\end{center}
+\end{table}
+
+Table 4.1 describes the dimensions of the detector shown in Figure 4.2. 
+
+\newpage
+\subsection{40T Detector}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.4]{40Ttopdown.png}
+\caption{A top down view of the 40T Detector}
+\end{figure}
+
+Figure 4.3 shows the detector's appearance. The red dots are individual QUPIDs, and the light blue shell is the acrylic shell. 
+
+\begin{table}[h]
+\caption{Characteristics of 40T Detector}
+\begin{center}
+    \begin{tabular}{ | l | l |}
+    \hline
+	\multicolumn{2}{|c|}{Dimensions of Argon Sphere} \\ \hline
+	Radius & 1.884m \\ \hline
+	Volume & 28.01$m^3$  \\ \hline
+	Mass & 40055 kg \\ \hline
+	\multicolumn{2}{|c|}{Acrylic Shell} \\ \hline
+	Thickness of Shell & 0.1m \\ \hline
+	Mass &  1912 kg \\ \hline
+	\multicolumn{2}{|c|}{QUPIDs} \\ \hline
+	Number of QUPIDs & 10532 \\ \hline
+	Coverage of QUPIDs &93.5$\%$ \\ \hline \hline
+	Total Mass & 41968 kg \\ \hline
+    \hline
+    \end{tabular}
+\end{center}
+\end{table}
+
+Table 4.2 describes the dimensions of the detector shown in Figure 4.2. 
+
+Due to the complexity and scale of the project, and the time frame in which it was assigned to design the detector, only the essential argon containment detection system is outlined. The realistic model would include a water tank which the acrylic sphere would sit in, a neck for inserting argon, and a cooling system to maintain the argon's cryogenic temperatures.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Simulation}
+
+In order to characterize the detector, the detector was modeled in Geant4, a toolkit for simulating particles through matter via Monte Carlo methods which is programmed in Objective C++. The particle, the medium, environment, the physics involved, the scintillation process, the beta decays, the QUPID detection of photons, the energy transfers, wavelength shifter mechanism must all by defined in code. Upon definition of these elements, the toolkit will compile a program, from which various tests can be run\footnote{Tests run include firing electron of various energy levels, and photons of 128nm}. Some of the necessary components, such as the physics processes were all available in a pre-existing program used to simulate DEAP-3600. A majority of the focus of the thesis was around modifying the existing code for the sizes and QUPID positioning algorithms. Due to time constraints, and coding set-backs, a limited set of simulations were produced.
+
+The test performed involved the simulation of a electron fired from the center point of the detector. The electron was fired at varying energy levels from 10keV to 100keV fired 5000 times in each run at 10keV intervals. The resulting events was recorded in a ROOT file, which can be read in a data analysis package ROOT. 
+
+\section{Simulation Results}
+
+The simulation was able to derive the sensitivities of the detectors at varying energy levels. The code outputs , among other things, the number of QUPID photon detectors hit per event simulated. This is expected to be proportional to the energy deposited in an interaction. The results came in the form of the number of photons detected per event per keV. This data displays itself as a counts for a number of QUPIDS. That is to say the x-axis is the number of QUPIDS hit, and the y-axis is the number of times that number of QUPIDs was hit. Examples are found in Appendix B.1.
+
+\subsection{Sensitivities}
+By applying a Gaussian curve fit to data that provides the number of QUPIDs hit for a certain energy, the number of photons detected at that energy level can be determined. These linear regressions are plots of all the means of the Gaussian taken from each of the graphs in Appendix B.1. Plotting these give a relationship of the number of photons detected per event, to the energy level of the event. The red point is a representation of latent noise when no event took place.  
+
+\subsubsection{500T Detector}
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.55]{500Tperformancechart.png}
+\caption{This chart describes the number of photons detected per event per keV for a 500T detector}
+\end{figure}
+
+As shown in figure 5.1, the linear regression is very good. There are 8.4871 photons/keV detected in this set up. The red point indicates when no electron recoils occur and is simply noise from the QUPIDs.  
+
+\newpage
+\subsubsection{40T Detector}
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.55]{40Tperformancechart.png}
+\caption{This chart describes the number of photons detected per event per keV for a 40T detector}
+\end{figure}
+
+As shown in Figure 5.2, the linear regression is perfect. There are 8.6418 photons/keV detected in this set up. The red point indicates when no electron recoils occur and is simply noise from the QUPIDs. 
+
+\subsubsection{Noise}
+In Figure 5.1 and 5.2, there is a red point in both graphs. This point represents the latent noise from the QUPIDs. A 500hz noise signal was introduced into the QUPID to simulate dark current or latent electrical noise from the equipment. This noise can cause false signals at very low energy levels, and as we can observe as we go lower than 10keV, it become difficult to discriminate between noise and signal. 
+
+In order to properly identify the difference, the Gaussian fits must not overlap by a magnitude of greater than 2 sigma from the noise mean peak. This provides a very clear distinction from the noise signal peaks and the nuclear recoil event peaks. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Cost Analysis}
+\begin{table}[htbp]
+  \centering
+  \caption{Cost Table of 40T Detector and 500T Detector}
+    \begin{tabular}{rrr}
+ \hline
+    Material & 40T   & 500T \\
+    \hline
+    Acrylic & \$8,548,066.30 & \$20,110,497.24 \\
+    QUPID & \$73,724,000.00 & \$380,807,000.00 \\
+    TPB   & \$45,834.92 & \$261,492.77 \\
+    Argon & \$50,069.97 & \$682,295.02 \\
+    Argon 40 Purification  & \$2,002,798.91 & \$27,291,800.78 \\ \hline \hline
+    Total & \$84,370,770.10 & \$429,153,085.81 \\
+\hline \hline
+    \end{tabular}%
+\end{table}%
+
+The cost of each material was derived from the prices of the component for a similar project DEAP-3600. The costs were scaled to suit the new detector, by deriving the base cost and multiplying it by the size of the component. These are light estimates, not meant to be taken verbatim. 
+
+The 40T detector, while it does meet the goal of under $\$$100 million,  future inflation and costs of employees and personnel, as well as inevitable items crucial to the detector including wiring harnesses, computer systems, safety procedures and protocols, the cryogenic cooling system, the filtration system for the argon, and the light water etc will inevitably cost over $\$$100 million.
+
+One important point to note, is the high cost of the QUPID. Best estimates for the cost of a QUPID lies around $\$$7000 per QUPID. This is a relatively high price in comparison to alternative PMTs which are approximately $\$$2350 each. In addition, these devices are still in the experimental stage, and if they are going to be commercialized for use still is in question. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\newpage
+\chapter{Conclusions and Recommendations}
+
+The detectors designed are completely capable of performing their designed tasks. They are able to distinguish photon energies of from a few keV (20keV) to 100keV from the background noise as simulated in Geant4. While the cross-section was not tested for, in principle the size of the detectors will allow for lower cross-section detection and will allow for 450 counts/year for the 40T detector and 3500 counts/year for 500T, at 50GeV, at a cross section of $10^{-46}cm$. It is trivial to see using equation 2.4, that lower cross section to $10^{-48}cm$ can be achieved.
+
+The QUPID positioning algorithm worked as expected, creating an arrangement patter to cover approximately 93.5$\%$ coverage in the 40T detector, and 83.64$\%$ in the 500T detector. While this is possibly the most optimal arrangement, this is not the most practical, as there must be room for the neck to insert the argon, and hold the tank.
+
+The 40T Detector is a promising step for a more sensitive and achieving detection of possible WIMPs at higher cross-sections. while the 500T Detector is too expensive to justify the creation of one. The 40T detector, while a preliminary estimate, is within the $\$$100 million dollar budget. It can also be noted that the most expensive item may in the future become less expensive, lowering the overall cost. 
+
+However, this analysis was a preliminary estimate and should be heeded as such. It provides a decent point to begin further research and analysis for a much more detailed detector design. Future work should be directed toward a complete design of the system, including the water tank, shielding methods, computer systems, a much more rigorous analysis of the stress via finite element analysis, and a thorough Monte Carlo simulation invoking all possibilities of background radiation, variation in detection rates due to the Earth's orbit etc.
+
+Despite the extensive investigation required for an appropriate judgment, the core structure of the detector is effective and will serve the purposes of the experiment. It has the potential to be the forefront in the next generation of dark matter detectors. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\appendix
+\chapter{Geant4 Code}
+This section contains the code modified from an earlier detector, specifically DEAP-3600, used to simulate the detector, its predicted enviorment, and potential detection characteristics. A majority of the features of the original detector was stripped and simplified in restraint of time. 
+\begin{code}
+G4VPhysicalVolume *DeapDetector::ConstructDetector() {
+
+G4double in                = 2.54*cm;
+G4RotationMatrix* xRot180deg = new G4RotationMatrix();
+xRot180deg->rotateX(pi);
+
+//Construct detector geometry
+    printf("\n\nconstruct detector called\n\n\n");
+    fGLab	= new G4Box ("fGLab",10*m,10*m,10*m);
+    fLLab	= new G4LogicalVolume(fGLab,fMat->fVacuum,"fLLab",0,0,0);
+    fPLab	= new G4PVPlacement(0,G4ThreeVector(),fLLab,"fPLab",0,false,0);
+	
+	//4.5m raidus gives 545831kg argon
+	//1.884 radius gives 400000kg argon
+//Definition of Argon Interior
+	G4double innerRA = 0*m;
+	G4double outerRA = 1.884*m;
+	G4Sphere *Argon
+= new G4Sphere("Argon", innerRA , outerRA, 0., PHI, 0., pi);
+	G4LogicalVolume*fLArgon
+= new G4LogicalVolume(Argon,fMat->fLiquidArgon,"fLArgon",0, 0, 0);
+	fPArgon
+= new G4PVPlacement(0, G4ThreeVector(), fLArgon,  "fPArgon",  fLLab,false, 0);
+
+//Definintion of Acrylic Wall
+	G4double innerR = outerRA + 1000*nm;
+	G4double outerR = outerRA + 0.1*m;
+
+	G4Sphere *Walls
+= new G4Sphere("Walls", innerR ,outerR, 0., PHI, 0., pi);
+	G4LogicalVolume*fLWalls
+= new G4LogicalVolume(Walls,   fMat->fUvtAcrylic,"fLWalls",0, 0, 0);
+	fPWalls
+= new G4PVPlacement(0,G4ThreeVector(),fLWalls, "fPWalls", fLLab,false,0 );
+		
+//Definition of Wavelength Shifter Surface
+	G4Sphere *WLSS 
+= new G4Sphere("WLSS", outerRA, outerRA+1000.*nm, 0., PHI, 0., pi);
+	G4LogicalVolume*fLWLSS
+=new G4LogicalVolume(WLSS,fMat->fTPB,"fLWLSS",0, 0, 0);
+	G4PVPlacement*fPWLSS
+= new G4PVPlacement(0, G4ThreeVector(), fLWLSS,"fPWLSS",  fLLab,false, 0);
+	
+//WAVELENGTH SHIFTER Surface Roughness
+		
+	G4OpticalSurface *tpb_surf= new G4OpticalSurface("tpb_surf");
+		tpb_surf->SetFinish(ground);
+		tpb_surf->SetModel(unified);
+		tpb_surf->SetSigmaAlpha(1.3*degree);
+		tpb_surf->SetType(dielectric_dielectric);
+		tpb_surf->SetMaterialPropertiesTable(fMat->fWSMPT);
+	
+//PMTS
+	G4double r = 0.0355*m; //approx radius of pmt ;
+	G4double R = outerR + 76*mm ; //approx distance from center for pmt ;
+//eqn's
+	fGPmt
+= new G4Sphere("fGPmt", 0, r, 0., PHI, 0., pi);
+	fLPmt
+= new G4LogicalVolume(fGPmt,   fMat->fPmtGlass,"fLPmt", 0, 0, 0);
+
+	G4PVPlacement **fPPmtArray;	
+
+	fPPmtArray = new G4PVPlacement* [100000];
+	
+	double dtheta = 8.*r/R/4.;
+	double dphi = 8.*r/R; 
+	double div = 1;// Division Rate
+	int max_rows=pi*R/div/r; 
+	int counter = 1;
+	int max_pmts_per_row;	
+	
+	for (int j = 0; j < max_rows; j++){
+
+// current radius of a "circle" on the sphere surface for the current theta 		
+		double theta = j*dtheta;
+		double r1 = R* sin(theta);
+		
+		if(theta == 0) 
+			max_pmts_per_row = 1; 
+		else {
+			max_pmts_per_row = pi*r1/div/r ;
+		}
+		dphi = twopi/max_pmts_per_row;
+
+		printf("This is j %d\n",j);
+		
+		for(int i = 0; i < max_pmts_per_row; i++){
+
+			double starting_phi;
+			
+			if(j%2==1) {
+				starting_phi = 0.5*dphi;				
+			} else {
+				starting_phi = 0.;
+			}
+			
+			double phi =  starting_phi+dphi*i;
+			printf("This is i %d\n",i);
+			fPPmtArray[counter]= new G4PVPlacement(0,
+4ThreeVector(R*cos(phi)*sin(theta), R*sin(phi)*sin(theta), R*cos(theta)), 
+fLPmt, "fPPmt", fLLab, false, counter);
+			counter++;	
+
+		}
+	}
+	
+//PMT Positioning File
+	fNPMTs = counter -1;
+	
+	char *DEAP_ROOT = getenv("DEAP_ROOT");
+	char fname[256];
+	
+	sprintf(fname,"%s/data/deap_pmt_positions_%d.dat",DEAP_ROOT,fNPMTs);
+	std::ofstream pmtposition;
+	pmtposition.open (fname, std::ios::out);
+	pmtposition << fNPMTs << endl;
+	counter=1;
+	
+	for (int j = 0; j < max_rows; j++){
+
+		double theta = j*dtheta;
+// current radius of a "circle" on the sphere surface for the current theta 
+		double r1 = R* sin(theta);
+		if(theta == 0) 
+			max_pmts_per_row = 1; 
+		else {
+			max_pmts_per_row = pi*r1/div/r ; 
+		}
+		printf("This is j %d\n",j);
+		
+		for(int i = 0; i < max_pmts_per_row; i++){
+			//double starting_phi = asin(r/R);
+			
+			double starting_phi;
+			
+			if(j%2==1) {
+				starting_phi = 0.5*dphi;				
+			} else {
+				starting_phi = 0.;
+			}
+			
+			double phi =  starting_phi+dphi*i;
+		
+			printf("This is i %d\n",i);
+			pmtposition << counter << " " << R*cos(phi)*sin(theta) 
+<< " " << R*sin(phi)*sin(theta) << " " << R*cos(theta) << endl ;
+			counter++;	
+		}
+	}
+    fLPmt->SetSensitiveDetector( fPMTSD );
+		pmtposition.close();
+	
+	//Colouring Stuff
+	G4VisAttributes *VisAttRed = new G4VisAttributes(G4Colour(1,0,0,.5));
+	G4VisAttributes *VisAttGreen = new G4VisAttributes(G4Colour(0,1,0,0.2));
+	G4VisAttributes *lightblue
+= new G4VisAttributes(G4Colour(0./255., 255./255.,255./255., .5));
+	
+	fLArgon->SetVisAttributes(VisAttGreen);
+	fLWalls->SetVisAttributes(lightblue);
+	//fLArgon->SetVisAttributes(G4VisAttributes::Invisible);
+	//fLWalls->SetVisAttributes(G4VisAttributes::Invisible);
+	fLLab->SetVisAttributes(G4VisAttributes::Invisible);
+	fLPmt->SetVisAttributes(VisAttRed);
+	fLWLSS->SetVisAttributes(G4VisAttributes::Invisible);
+	//	fLVGap->SetVisAttributes(G4VisAttributes::Invisible);
+	//	fLWLSS->SetVisAttributes(lightblue);
+	
+	return fPLab;
+}
+\end{code}
+
+\chapter{Simulation Results}
+\section{QUPID Hits}
+\subsection{500T Detector}
+\subsubsection{20-100keV}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts2010050.png}
+\caption{5000 electrons fired from an energy range of 20-100keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{Noise}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{noise50.png}
+\caption{This graph depicts the noise detected in the QUPIDs. 500hz of latent noise was simulated for each QUPID.}
+\end{figure}
+
+\subsubsection{10keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts1250.png}
+\caption{5000 electrons fired from an energy range of 10keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{20keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPMT1150.png}
+\caption{5000 electrons fired from an energy range of 20keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+
+\subsubsection{40keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts950.png}
+\caption{5000 electrons fired from an energy range of 40keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{60keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts750.png}
+\caption{5000 electrons fired from an energy range of 60keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+
+\subsubsection{70keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts650.png}
+\caption{5000 electrons fired from an energy range of 50keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{80keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts450.png}
+\caption{5000 electrons fired from an energy range of 50keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\subsubsection{90keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts350.png}
+\caption{5000 electrons fired from an energy range of 50keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{100keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{NPmts250.png}
+\caption{5000 electrons fired from an energy range of 100keV. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsection{40T Detector}
+\subsubsection{Noise}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.65]{noise40.png}
+\caption{This graph depicts the noise detected in the QUPIDs. 500hz of latent noise was simulated for each QUPID.}
+\end{figure}
+
+\subsubsection{10keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.65]{pmt10.png}
+\caption{5000 electrons fired from an energy range of 10keV in the 40T detector. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{20keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.6]{pmt20.png}
+\caption{5000 electrons fired from an energy range of 20keV in the 40T detector. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+
+\subsubsection{40keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.6]{pmt40.png}
+\caption{5000 electrons fired from an energy range of 40keV in the 40T detector.  This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{60keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.6]{pmt60.png}
+\caption{5000 electrons fired from an energy range of 60keV in the 40T detector.  This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\subsubsection{80keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.6]{pmt80.png}
+\caption{5000 electrons fired from an energy range of 80keV in the 40T detector. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\subsubsection{100keV}
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.6]{pmt100.png}
+\caption{5000 electrons fired from an energy range of 100keV in the 40T detector. This graph depicts the number of QUPIDs hit by photons which scintillated per event.}
+\end{figure}
+
+\newpage
+\section{QUPID Wavelength Response}
+\subsection{500T Detector}
+This is an example of the QUPID response from the detector. 5000 photons at a wavelength of 128nm were shot to reflect the energy level of a typical nuclear recoil event from the Argon nucleus. We can see that a majority of the photons detected are in fact above the 400nm range.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[scale=0.25]{Lambda.png}
+\caption{The x-axis represents the wavelength, and the y-axis represents the count number of that wavelength.}
+\end{figure}
+
+\begin{thebibliography}{9}
+\bibitem{1}
+NASA,"The Hidden Lives of Galaxies - Hidden Mass:\url{http://imagine.gsfc.nasa.gov/docs/teachers/galaxies/imagine/hidden_mass.html}, 4 Oct 2006,[March 16,2012]
+\bibitem{2}
+ESA,"Jan Hendrik Oort: Comet pioneer"
+\url{http://www.esa.int/esaSC/SEMBPC2PGQD_index_0.html}, 27 Feb 2004 [March 16,2012]
+\bibitem{3}Zwicky, F., (1937, Oct.) "On the Masses of Nebulae and of Clusters of Nebulae" \emph{Astrophysical Journal}, vol. 86, p.217 : 
+\url{http://dx.doi.org/10.1086/143864}
+\bibitem{4}
+Rubin, V. C.; Ford, W. K. Jr.;. Thonnard, N. (1980, June) "Rotational properties of 21 SC galaxies with a large range of luminosities and radii, from NGC 4605 /R = 4kpc/ to UGC 2885 /R = 122 kpc/" \emph{
+Astrophysical Journal}, Part 1, vol. 238, June 1, 1980, p. 471-487 : 
+\url{http://adsabs.harvard.edu/doi/10.1086/158003}
+\bibitem{5}
+Begeman, K. G., (1989, Oct.) "H I rotation curves of spiral galaxies. I - NGC 3198" \emph{Astronomy and Astrophysics } (ISSN 0004-6361), vol. 223, no. 1-2, Oct. 1989, p. 47-60. : 
+\url{http://adsabs.harvard.edu/abs/1989A%26A...223...47B}
+\bibitem{6}
+Clowe, Douglas; Bradač, Maruša; Gonzalez, Anthony H.; Markevitch, Maxim; Randall, Scott W.; Jones, Christine; Zaritsky, Dennis, (2006, Sept) " Direct Empirical Proof of the Existence of Dark Matter" \emph{The Astrophysical Journal}, Volume 648, Issue 2, pp. L109-L113. : 
+\url{  http://arxiv.org/abs/astro-ph/0608407}
+\bibitem{7}
+NASA:"Public access site for The Wilkinson Microwave Anisotropy Probe and associated information about cosmology." 06-24-2011, [March 20,2012]
+\url{  http://map.gsfc.nasa.gov/universe/bb_tests_cmb.html}
+\bibitem{8}
+Jarosik, N.; Bennett, C. L.; Dunkley, J.; Gold, B.; Greason, M. R.; Halpern, M.; Hill, R. S.; Hinshaw, G.; Kogut, A.; Komatsu, E.; Larson, D.; Limon, M.; Meyer, S. S.; Nolta, M. R.; Odegard, N.; Page, L.; Smith, K. M.; Spergel, D. N.; Tucker, G. S.; Weiland, J. L.; Wollack, E.; Wright, E. L. (2011, Febuary) "Seven-year Wilkinson Microwave Anisotropy Probe (WMAP) Observations: Sky Maps, Systematic Errors, and Basic Results" \emph{The Astrophysical Journal Supplement}, Volume 192, Issue 2, article id. 14 (2011). :
+\url{http://arxiv.org/pdf/1001.4744v1.pdf}
+\bibitem{9}
+   M. Turner (2010). "Axions 2010 Workshop". U. Florida, Gainesville, USA.
+\bibitem{10}
+Peter, Annika H. G. (2012 January) "Dark Matter: A Brief Review" \emph{eprint arXiv:1201.3942}
+ \url{http://arxiv.org/abs/1201.3942}
+\bibitem{11}
+Olive, Keith A. (2003 January) "TASI Lectures on Dark Matter" \emph{eprint arXiv:astro-ph/0301505}
+ \url{ http://arxiv.org/abs/astro-ph/0301505}
+\bibitem{12}
+  G. Steigman $\&$ M. S. Turner, Cosmological constraints on the properties of weakly interacting
+massive particles, Nucl. Phys. B 253, 375 (1985).
+\bibitem{13}
+Lippincott, W. H. and Coakley, K. J. and Gastler, D. and Hime, A. and Kearns, E. and McKinsey, D. N. and Nikkel, J. A. and Stonehill, L. C. ( 2008 Sept ) "Scintillation time dependence and pulse shape discrimination in liquid argon" \emph{Phys. Rev. C} Volume 78, Issue 3, 035801 (2008) 
+ \url{http://link.aps.org/doi/10.1103/PhysRevC.78.035801}
+\bibitem{14}
+Chandrasekharan, R.; Knecht, A.; Messina, M.; Regenfus, C.; Rubbia, A. (2005 Nov.) "High Efficiency Detection of Argon Scintillation Light of 128nm Using LAAPDs" \emph{eprint} arXiv:physics/0511093
+\url{http://arxiv.org/pdf/physics/0511093.pdf}
+\bibitem{16}
+Di Pompeo, Francesco (2008 Oct) " Liquid Argon XUV scintillation light detection for direct Dark Matter search: the WArP Experiment" \url{http://www.lnf.infn.it/conference/wuta08/Presentazioni2/Di%20Pompeo.pdf}
+\bibitem{17}
+ Y. Sun et al. / Nuclear Physics A 834 (2010) 813c–815c
+\bibitem{18}
+Zacek, V. (2008 Dec.) "Dark Matter" \emph{
+FUNDAMENTAL INTERACTIONS} Proceedings of the 22nd Lake Louise Winter Institute. Held 19-24 February 2007 in Lake Louise, Alberta, Canada. Published by World Scientific Publishing Co. Pte. Ltd., 2008. ISBN $\#$9789812776105, pp. 170-206 : \url{http://arxiv.org/abs/0707.0472v1}
+\bibitem{19}
+Teymourian, A.; Aharoni, D.; Baudis, L.; Beltrame, P.; Brown, E.; Cline, D.; Ferella, A. D.; Fukasawa, A.; Lam, C. W.; Lim, T.; Lung, K.; Meng, Y.; Muramatsu, S.; Pantic, E.; Suyama, M.; Wang, H.; Arisaka, K. (2011 October) "Characterization of the QUartz Photon Intensifying Detector (QUPID) for noble liquid detectors" \emph{Nuclear Instruments and Methods in Physics Research A}, Volume 654, Issue 1, p. 184-195.\url{http://arxiv.org/pdf/1103.3689.pdf}
+\bibitem{20}
+Tadayoshi Doke, Kimiaki Masuda, Eido Shibamura, Estimation of absolute photon yields in liquid argon and xenon for relativistic (1 MeV) electrons, Nuclear Instruments and Methods in Physics Research Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, Volume 291, Issue 3, 1 June 1990, Pages 617-620, ISSN 0168-9002, 10.1016/0168-9002(90)90011-T.\url{http://www.sciencedirect.com/science/article/pii/016890029090011T}
+\bibitem{21}
+Yongchen Suna; Dongming Meia; Jason Spaansa; Christina Kellera;(2010 February) "Depletion of 39Ar for Liquid Argon detectors of Dark Matter Search" \emph{Nuclear Physics A}Volume 834, Issues 1–4, 1 March 2010, Pages 813c–815c : \url{http://dx.doi.org/10.1016/j.nuclphysa.2010.01.154}
+
+\end{thebibliography}
+\end{document}
